@@ -129,6 +129,7 @@ class SocialWorld:
             if self.save_name in file:
                 print("Loading existing graph from:{}".format(file))
                 self.graph = nx.read_gml(self.graph_file_path)
+                self.graph = nx.relabel_nodes(self.graph, lambda n: int(n) if isinstance(n, str) and n.lstrip("-").isdigit() else n)
                 break
         else:
             print("Building new graph in:{}".format(self.graph_file_path))
