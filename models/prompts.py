@@ -19,7 +19,7 @@ def prompt_generator(v, prompt_type, spatial_world_info, memory_info, social_wor
     if 'origin' in prompt_type or "llmzs" in prompt_type:
         prompt = prompt_generator_llmzs(v)
     elif "agent" in prompt_type:
-        prompt = prompt_generator_agent(v, prompt_type, spatial_world_info, memory_info, social_world_info)
+        prompt = prompt_generator_agent(v, prompt_type, spatial_world_info, memory_info, social_world_info, rec)
     elif "llmmob" in prompt_type:
         prompt = prompt_generator_llmmob(v)
     elif "llmmove" in prompt_type:
@@ -77,7 +77,7 @@ def prompt_generator_llmzs(v):
     return prompt
 
 
-def prompt_generator_agent(v, prompt_type, spatial_world_info, memory_info, social_world_info):
+def prompt_generator_agent(v, prompt_type, spatial_world_info, memory_info, social_world_info, rec=None):
     prompt = ''
     if prompt_type == "agent_move_v6":
         prompt = f"""
@@ -100,6 +100,36 @@ def prompt_generator_agent(v, prompt_type, spatial_world_info, memory_info, soci
 <historical_stays>: {[[item[0], item[1], item[2], item[3], ",".join((item[5],item[7],item[6]))] for item in v['historical_stays']]}
 <context_stays>: {[[item[0], item[1], item[2], item[3], ",".join((item[5],item[7],item[6]))] for item in v['context_stays']]}
 <target_stay>: {[v['target_stay'][0], v['target_stay'][1], v['target_stay'][2]]}
+
+{OUTPUT_PROMPT}
+"""
+
+    elif prompt_type == "agent_move_explore":
+        # Thesis adaptation 3c: AgentMove + nearby places the user has never visited
+        prompt = f"""
+{COMMON_PROMPT}
+3. The potential places that users may visit based on an overall analysis of multi-level urban spaces.
+4. The personal profile and memory info extracted from the long trajectory history of each user.
+5. <candidate_places>: nearby places this user has NEVER visited, nearest first. People sometimes go to new places, so your five predictions may mix previously visited places and candidate places.
+
+
+## The potential places from the global spatial view:
+{spatial_world_info}
+
+## The nearby places visited by other users with similar mobility pattern:
+{social_world_info}
+
+## The personal profile and long memory:
+<historical_info>: {memory_info['historical_info']}
+<user_profile>: {memory_info['user_profile']}
+
+## The history data:
+<historical_stays>: {[[item[0], item[1], item[2], item[3], ",".join((item[5],item[7],item[6]))] for item in v['historical_stays']]}
+<context_stays>: {[[item[0], item[1], item[2], item[3], ",".join((item[5],item[7],item[6]))] for item in v['context_stays']]}
+<target_stay>: {[v['target_stay'][0], v['target_stay'][1], v['target_stay'][2]]}
+
+## Candidate places the user has never visited [Format: (place_id, category, address, distance_km from the last context stay)]:
+<candidate_places>: {rec}
 
 {OUTPUT_PROMPT}
 """

@@ -13,6 +13,7 @@ from models.world_model import SpatialWorld, SocialWorld
 from models.personal_memory import Memory
 from models.prompts import prompt_generator
 from utils import create_dir, extract_json, haversine_distance
+from models.candidates import nearest_unvisited
 from config import PROXY, PROCESSED_DIR
 random.seed(100)
 
@@ -60,6 +61,10 @@ class Agent:
                     if len(candidate_poi_info) > 99:
                         break
             # print(len(candidate_poi_info))
+
+        # thesis adaptation 3c: leak-free nearby candidates the user has never visited
+        if self.prompt_type == "agent_move_explore":
+            candidate_poi_info = nearest_unvisited(traj_seqs, self.city_name, k=20)
 
         # final prompt
         prompt_text = prompt_generator(traj_seqs, self.prompt_type, spatial_world_info, memory_info, social_world_info, candidate_poi_info)
@@ -277,7 +282,7 @@ if __name__ == "__main__":
     parser.add_argument('--sample_one_traj_of_user', action='store_true',)
     parser.add_argument('--max_sample_trajectories', type=int, default=100)
     parser.add_argument('--use_int_venue', action='store_true', help='Use int Venue ID')
-    parser.add_argument('--prompt_type', type=str, default="agent_move_v6", choices=["agent_move_v6", "origin", "llmmob", "llmzs", "llmmove"])
+    parser.add_argument('--prompt_type', type=str, default="agent_move_v6", choices=["agent_move_v6", "agent_move_explore", "origin", "llmmob", "llmzs", "llmmove"])
     parser.add_argument('--workers', type=int, default=1)
     parser.add_argument('--exp_name', type=str, default="")
     parser.add_argument('--social_info_type', type=str, default="address")
